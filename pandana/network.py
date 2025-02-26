@@ -1,4 +1,5 @@
 from __future__ import division, print_function
+from contextlib import suppress
 
 import numpy as np
 import pandas as pd
@@ -7,8 +8,25 @@ from sklearn.neighbors import KDTree
 from .cyaccess import cyaccess
 from .loaders import pandash5 as ph5
 import warnings
+import os
 
 
+class Suppresser:
+    def __enter__(self):
+        self._original_stdout_fd = os.dup(1)
+        self._original_stderr_fd = os.dup(2)
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, 1)
+        os.dup2(devnull, 2)
+        os.close(devnull)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.dup2(self._original_stdout_fd, 1)
+        os.dup2(self._original_stderr_fd, 2)
+        os.close(self._original_stdout_fd)
+        os.close(self._original_stderr_fd)
+        
+        
 def reserve_num_graphs(num):
     """
     This function was previously used to reserve memory space for multiple
@@ -62,9 +80,12 @@ class Network:
         network. If twoway = False, it is assumed that travel can only occur
         in the explicit direction indicated by the from and to ID in the edge
         table.
+        
+        
+        added parametr out, that changed mode of printing information to console.
 
     """
-
+    '''
     def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True):
         nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
         edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
@@ -101,6 +122,49 @@ class Network:
 
         self._twoway = twoway
 
+        self.kdtree = KDTree(nodes_df.values)
+    '''
+        
+    def __init__(self, node_x, node_y, edge_from, edge_to, edge_weights, twoway=True, out=True):
+        if not out:
+            context_manager = Suppresser()
+        else:
+            context_manager = None
+
+        with context_manager or suppress(): 
+            nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
+            edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
+
+            self.nodes_df = nodes_df
+            self.edges_df = edges_df
+            self.impedance_names = list(edge_weights.columns)
+            self.variable_names = set()
+            self.poi_category_names = []
+            self.poi_category_indexes = {}
+
+             # this maps IDs to indexes which are used internally
+            # this is a constant source of headaches, but all node identifiers
+            # in the c extension are actually indexes ordered from 0 to numnodes-1
+            # node IDs are thus translated back and forth in the python layer,
+            # which allows non-integer node IDs as well
+            self.node_idx = pd.Series(
+                np.arange(len(nodes_df), dtype="int"), index=nodes_df.index
+            )
+
+            edges = pd.concat(
+                [self._node_indexes(edges_df["from"]), self._node_indexes(edges_df["to"])],
+                axis=1,
+            )
+
+            self.net = cyaccess(
+                self.node_idx.values,
+                nodes_df.astype("double").values,
+                edges.values,
+                edges_df[edge_weights.columns].transpose().astype("double").values,
+                twoway,
+            )
+
+        self._twoway = twoway
         self.kdtree = KDTree(nodes_df.values)
 
     @classmethod
