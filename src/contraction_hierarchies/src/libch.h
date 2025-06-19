@@ -86,6 +86,12 @@ struct Edge {
     explicit Edge(NodeID s, NodeID t, EdgeID n, EdgeWeight w, bool f, bool b) : //, short ty) :
             _source(s), _target(t), _id(n), forward(f), _weight(w), backward(b) { }
 
+    explicit Edge(NodeID s, NodeID t, EdgeID n, EdgeWeight w, bool f, bool b, int trip_id) :
+            _source(s), _target(t), _id(n), forward(f), _weight(w), backward(b) { }
+
+    explicit Edge(NodeID s, NodeID t, EdgeID n, EdgeWeight w, bool f, bool b, int trip_id, int original_edge_index) :
+            _source(s), _target(t), _id(n), forward(f), _weight(w), backward(b) { }
+
     NodeID target() const {return _target; }
     NodeID source() const {return _source; }
     NodeID name() const { return _id; }

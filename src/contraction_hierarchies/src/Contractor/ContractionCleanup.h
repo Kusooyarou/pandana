@@ -81,6 +81,8 @@ public:
             bool backward;
             short type;
             _MiddleName middleName;
+            int trip_id;
+            int original_edge_index;
         } data;
 
         //sorts by source and other attributes
@@ -127,6 +129,8 @@ public:
             newEdge.data.forward = _graph[edge].data.forward;
             newEdge.data.backward = _graph[edge].data.backward;
             newEdge.data.type = _graph[edge].data.type;
+            newEdge.data.trip_id = _graph[edge].data.trip_id;
+            newEdge.data.original_edge_index = _graph[edge].data.original_edge_index;
             edges.push_back( newEdge );
         }
 #ifdef _GLIBCXX_PARALLEL

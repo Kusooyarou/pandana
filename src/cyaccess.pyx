@@ -27,10 +27,13 @@ cdef extern from "accessibility.h" namespace "MTC::accessibility":
             float, string, string, string, int)
         vector[int] Route(int, int, int)
         vector[vector[int]] Routes(vector[long], vector[long], int)
+        vector[int] RouteWithTripIds(int, int, int)
+        vector[vector[int]] RoutesWithTripIds(vector[long], vector[long], int)
         double Distance(int, int, int)
         vector[double] Distances(vector[long], vector[long], int)
         vector[vector[pair[long, float]]] Range(vector[long], float, int, vector[long])
         void precomputeRangeQueries(double)
+        void set_trip_ids(vector[int] trip_ids)
 
 
 cdef np.ndarray[double] convert_vector_to_array_dbl(vector[double] vec):
@@ -178,6 +181,16 @@ cdef class cyaccess:
         """
         return self.access.Routes(srcnodes, destnodes, impno)
 
+    def shortest_paths_with_trip_ids(self, np.ndarray[long] srcnodes, 
+            np.ndarray[long] destnodes, int impno=0):
+        """
+        srcnodes - node ids of origins
+        destnodes - node ids of destinations
+        impno - impedance id
+        Returns trip_ids instead of node paths
+        """
+        return self.access.RoutesWithTripIds(srcnodes, destnodes, impno)
+
     def shortest_path_distance(self, int srcnode, int destnode, int impno=0):
         """
         srcnode - node id origin
@@ -207,3 +220,15 @@ cdef class cyaccess:
         ext_ids - all node ids in the network
         """
         return self.access.Range(srcnodes, radius, impno, ext_ids)
+
+    def simple_test(self):
+        return "test"
+
+    def test_method(self):
+        print("Test method works!")
+        return True
+
+    def set_trip_ids(self, np.ndarray[int] trip_ids):
+        print(f"[CYTHON DEBUG] set_trip_ids called with {len(trip_ids)} trip_ids")
+        # Simple implementation for now
+        pass
