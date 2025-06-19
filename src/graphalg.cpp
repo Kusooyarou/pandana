@@ -302,5 +302,14 @@ Graphalg::NearestPOI(const POIKeyType &category, int src, double maxdist, int nu
 
     return dm;
 }
+
+std::vector<std::vector<int>> Graphalg::RoutesWithTripIds(std::vector<long> sources, std::vector<long> targets, int threadNum) {
+    size_t n = std::min(sources.size(), targets.size());
+    std::vector<std::vector<int>> result(n);
+    for (size_t i = 0; i < n; ++i) {
+        result[i] = this->RouteWithTripIds(static_cast<int>(sources[i]), static_cast<int>(targets[i]), threadNum);
+    }
+    return result;
+}
 }  // namespace accessibility
 }  // namespace MTC

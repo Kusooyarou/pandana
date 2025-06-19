@@ -68,6 +68,8 @@ class Graphalg {
     
     // Pointer to Accessibility for accessing accessibilityVars
     class Accessibility* accessibility_ptr;
+
+    std::vector<std::vector<int>> RoutesWithTripIds(std::vector<long> sources, std::vector<long> targets, int threadNum = 0);
 };
 }  // namespace accessibility
 }  // namespace MTC
