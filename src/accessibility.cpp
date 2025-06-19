@@ -25,30 +25,29 @@ Accessibility::Accessibility(
         vector< vector<long>> edges,
         vector< vector<double>>  edgeweights,
         bool twoway) {
-    this->numnodes = numnodes;
-
-    // Create a single graph for now
-    std::shared_ptr<Graphalg> g = std::make_shared<Graphalg>(
-        numnodes, edges, edgeweights[0], twoway, this);
-    std::shared_ptr<MTC::accessibility::Graphalg>ptr(g);
-    ga.push_back(ptr);
 
     this->aggregations.reserve(9);
     this->aggregations.push_back("sum");
     this->aggregations.push_back("mean");
-    this->aggregations.push_back("count");
-    this->aggregations.push_back("std");
     this->aggregations.push_back("min");
-    this->aggregations.push_back("max");
     this->aggregations.push_back("25pct");
     this->aggregations.push_back("median");
     this->aggregations.push_back("75pct");
+    this->aggregations.push_back("max");
+    this->aggregations.push_back("std");
+    this->aggregations.push_back("count");
 
     this->decays.reserve(3);
     this->decays.push_back("exp");
     this->decays.push_back("linear");
     this->decays.push_back("flat");
 
+    for (int i = 0 ; i < edgeweights.size() ; i++) {
+        this->addGraphalg(new Graphalg(numnodes, edges, edgeweights[i],
+                          twoway));
+    }
+
+    this->numnodes = numnodes;
     this->dmsradius = -1;
 }
 
@@ -80,21 +79,6 @@ Accessibility::precomputeRangeQueries(float radius) {
     }
     }
     dmsradius = radius;
-}
-
-void
-Accessibility::set_trip_ids(vector<int> trip_ids) {
-    std::cout << "[C++ DEBUG] Accessibility::set_trip_ids called with " << trip_ids.size() << " trip_ids. First 5: ";
-    for (size_t i = 0; i < std::min(trip_ids.size(), size_t(5)); ++i) {
-        std::cout << trip_ids[i];
-        if (i + 1 < std::min(trip_ids.size(), size_t(5))) std::cout << ", ";
-    }
-    std::cout << std::endl;
-    
-    // Set trip_ids for all graphs (usually just one)
-    for (int i = 0 ; i < ga.size() ; i++) {
-        ga[i]->set_trip_ids(trip_ids);
-    }
 }
 
 
@@ -159,29 +143,6 @@ Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
         vector<NodeID> ret = this->ga[graphno]->Route(sources[i], targets[i], 
             omp_get_thread_num());
         routes[i] = vector<int> (ret.begin(), ret.end());
-    }
-    return routes;
-}
-
-
-vector<int>
-Accessibility::RouteWithTripIds(int src, int tgt, int graphno) {
-    return this->ga[graphno]->RouteWithTripIds(src, tgt);
-}
-
-
-vector<vector<int>>
-Accessibility::RoutesWithTripIds(vector<long> sources, vector<long> targets, int graphno) {
-
-    int n = std::min(sources.size(), targets.size()); // in case lists don't match
-    vector<vector<int>> routes(n);
-
-    #pragma omp parallel
-    #pragma omp for schedule(guided)
-    for (int i = 0 ; i < n ; i++) {
-        vector<int> ret = this->ga[graphno]->RouteWithTripIds(sources[i], targets[i], 
-            omp_get_thread_num());
-        routes[i] = ret;
     }
     return routes;
 }

@@ -56,13 +56,6 @@ class Accessibility {
     vector<vector<int>> Routes(vector<long> sources, vector<long> targets,  
                                int graphno = 0);
 
-    // shortest path with trip_ids between two points
-    vector<int> RouteWithTripIds(int src, int tgt, int graphno = 0);
-
-    // shortest path with trip_ids between list of origins and destinations
-    vector<vector<int>> RoutesWithTripIds(vector<long> sources, vector<long> targets,  
-                                          int graphno = 0);
-
     // shortest path distance between two points
     double Distance(int src, int tgt, int graphno = 0);
     
@@ -73,20 +66,11 @@ class Accessibility {
     // precompute the range queries and reuse them
     void precomputeRangeQueries(float radius);
 
-    // set trip_ids for the network
-    void set_trip_ids(vector<int> trip_ids);
-
     // aggregation types
     vector<string> aggregations;
 
     // decay types
     vector<string> decays;
-
-    // accessibility_vars_t is a vector of floating point values
-    // assigned to each node - the first level of the data structure
-    // is dereferenced by node index
-    typedef vector<vector<float> > accessibility_vars_t;
-    map<string, accessibility_vars_t> accessibilityVars;
 
  private:
     double maxdist;
@@ -98,6 +82,11 @@ class Accessibility {
     // by time of day
     vector<std::shared_ptr<Graphalg> > ga;
 
+    // accessibility_vars_t is a vector of floating point values
+    // assigned to each node - the first level of the data structure
+    // is dereferenced by node index
+    typedef vector<vector<float> > accessibility_vars_t;
+    map<string, accessibility_vars_t> accessibilityVars;
     // this is a map for pois so we can keep track of how many
     // pois there are at each node - for now all the values are
     // set to one, but I can imagine using floating point values

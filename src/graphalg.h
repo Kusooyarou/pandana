@@ -25,21 +25,7 @@ class Graphalg {
         vector< vector<long> > edges, vector<double> edgeweights,
         bool twoway);
 
-    Graphalg(
-        int numnodes,
-        vector< vector<long> > edges, vector<double> edgeweights,
-        vector<int> trip_ids,
-        bool twoway);
-
-    Graphalg(
-        int numnodes,
-        vector< vector<long> > edges, vector<double> edgeweights,
-        bool twoway,
-        class Accessibility* accessibility_ptr);
-
     std::vector<NodeID> Route(int src, int tgt, int threadNum = 0);
-
-    std::vector<int> RouteWithTripIds(int src, int tgt, int threadNum = 0);
 
     double Distance(int src, int tgt, int threadNum = 0);
 
@@ -57,17 +43,8 @@ class Graphalg {
         ch.createPOIIndex(category, maxdist*DISTANCEMULTFACT, maxitems);
     }
 
-    void set_trip_ids(std::vector<int> trip_ids) {
-        this->trip_ids = trip_ids;
-    }
-
     int numnodes;
     CH::ContractionHierarchies ch;
-    std::vector<int> trip_ids;
-    std::vector<std::vector<long>> edges_storage;
-    
-    // Pointer to Accessibility for accessing accessibilityVars
-    class Accessibility* accessibility_ptr;
 };
 }  // namespace accessibility
 }  // namespace MTC

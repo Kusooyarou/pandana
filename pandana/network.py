@@ -143,27 +143,29 @@ class Network:
             self.poi_category_indexes = {}
 
              # this maps IDs to indexes which are used internally
+            # this is a constant source of headaches, but all node identifiers
+            # in the c extension are actually indexes ordered from 0 to numnodes-1
+            # node IDs are thus translated back and forth in the python layer,
+            # which allows non-integer node IDs as well
             self.node_idx = pd.Series(
                 np.arange(len(nodes_df), dtype="int"), index=nodes_df.index
             )
 
-            # Сохраняем внутренние индексы рёбер
-            self.edge_indexes = pd.concat(
+            edges = pd.concat(
                 [self._node_indexes(edges_df["from"]), self._node_indexes(edges_df["to"])],
                 axis=1,
-            ).values
+            )
 
             self.net = cyaccess(
                 self.node_idx.values,
                 nodes_df.astype("double").values,
-                self.edge_indexes,
+                edges.values,
                 edges_df[edge_weights.columns].transpose().astype("double").values,
                 twoway,
             )
 
         self._twoway = twoway
         self.kdtree = KDTree(nodes_df.values)
-        self.trip_ids = None  # Added field for storing trip_ids
 
     @classmethod
     def from_hdf5(cls, filename):
@@ -268,7 +270,7 @@ class Network:
         # map back to external node IDs
         return self.node_ids.values[path]
 
-    def shortest_paths(self, nodes_a, nodes_b, imp_name=None, trip_id=False):
+    def shortest_paths(self, nodes_a, nodes_b, imp_name=None):
         """
         Vectorized calculation of shortest paths. Accepts a list of origins
         and list of destinations and returns a corresponding list of
@@ -285,15 +287,12 @@ class Network:
             Corresponding destination node IDs
         imp_name : string
             The impedance name to use for the shortest path
-        trip_id : bool, optional
-            If True, returns trip_ids instead of node paths. Default is False.
-            Requires trip_ids to be set using set_trip_ids() method.
 
         Returns
         -------
         paths : list of np.ndarray
-            If trip_id=False: Nodes traversed in each shortest path
-            If trip_id=True: Trip IDs traversed in each shortest path
+            Nodes traversed in each shortest path
+
         """
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
@@ -302,33 +301,16 @@ class Network:
                 )
             )
 
-        if trip_id and self.trip_ids is None:
-            raise ValueError(
-                "trip_id=True requires trip_ids to be set using set_trip_ids() method"
-            )
-
         # map to internal node indexes
         nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
         nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
 
         imp_num = self._imp_name_to_num(imp_name)
 
-        if trip_id:
-            # Pass trip_ids to C++ if available
-            if hasattr(self, '_trip_ids_array'):
-                print(f"[DEBUG] Passing trip_ids to C++: {self._trip_ids_array}")
-                # For now, we'll use a simple approach - pass trip_ids as a parameter
-                # This requires modifying the C++ interface
-                paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
-            else:
-                print(f"[DEBUG] No trip_ids available, using default C++ method")
-                paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
-        else:
-            paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
-            # map back to external node ids
-            paths = [self.node_ids.values[p] for p in paths]
+        paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
 
-        return paths
+        # map back to external node ids
+        return [self.node_ids.values[p] for p in paths]
 
     def shortest_path_length(self, node_a, node_b, imp_name=None):
         """
@@ -954,59 +936,36 @@ class Network:
 
     def low_connectivity_nodes(self, impedance, count, imp_name=None):
         """
-        Return the node IDs that have fewer than count connections within the
-        specified impedance.
+        Identify nodes that are connected to fewer than some threshold
+        of other nodes within a given distance.
 
         Parameters
         ----------
         impedance : float
-            The impedance threshold
+            Distance within which to search for other connected nodes. This
+            will usually be a distance unit in meters however if you have
+            customized the impedance this could be in other units such as
+            utility or time etc.
         count : int
-            The minimum number of connections required
-        imp_name : string
-            The impedance name to use
+            Threshold for connectivity. If a node is connected to fewer
+            than this many nodes within `impedance` it will be identified
+            as "low connectivity".
+        imp_name : string, optional
+            The impedance name to use for the aggregation on this network.
+            Must be one of the impedance names passed in the constructor of
+            this object.  If not specified, there must be only one impedance
+            passed in the constructor, which will be used.
 
         Returns
         -------
-        node_ids : numpy.ndarray
-            Array of node IDs with low connectivity
+        node_ids : array
+            List of "low connectivity" node IDs.
+
         """
-        imp_num = self._imp_name_to_num(imp_name)
-        agg = self.net.getAllAggregateAccessibilityVariables(
-            impedance, "tmp", "count", "flat", imp_num
-        )
+        # set a counter variable on all nodes
+        self.set(self.node_ids.to_series(), name="counter")
+
+        # count nodes within impedance range
+        agg = self.aggregate(impedance, type="count", imp_name=imp_name, name="counter")
+
         return np.array(agg[agg < count].index)
-
-    def set_trip_ids(self, trip_ids):
-        """
-        Set the trip_ids for the network edges.
-        """
-        print(f"[DEBUG] set_trip_ids called with {len(trip_ids)} trip_ids. First 5: {list(trip_ids)[:5]}")
-        if len(trip_ids) != len(self.edges_df):
-            raise ValueError(
-                f"trip_ids length ({len(trip_ids)}) must match number of edges ({len(self.edges_df)})"
-            )
-        self.trip_ids = pd.Series(trip_ids, index=self.edges_df.index)
-        # Store trip_ids directly in Python for now
-        self._trip_ids_array = np.array(trip_ids, dtype=int)
-        print(f"[DEBUG] Stored trip_ids in Python: {self._trip_ids_array}")
-
-        # Pass trip_ids to C++ using initialize_access_var mechanism
-        try:
-            print(f"[DEBUG] Attempting to pass trip_ids via initialize_access_var...")
-            # Create node indices for each edge
-            edge_from_nodes = self._node_indexes(self.edges_df['from']).values
-            trip_ids_double = self._trip_ids_array.astype("double")
-
-            print(f"[DEBUG] Edge from nodes: {edge_from_nodes}")
-            print(f"[DEBUG] Trip IDs double: {trip_ids_double}")
-
-            self.net.initialize_access_var(
-                "trip_ids".encode("utf-8"),
-                edge_from_nodes,
-                trip_ids_double,
-            )
-            print(f"[DEBUG] Successfully passed trip_ids to C++ via initialize_access_var")
-        except Exception as e2:
-            print(f"[DEBUG] initialize_access_var failed: {e2}")
-            print(f"[DEBUG] Continuing with Python-only storage")
