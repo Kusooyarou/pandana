@@ -316,12 +316,12 @@ class Network:
         if trip_id:
             # Pass trip_ids to C++ if available
             if hasattr(self, '_trip_ids_array'):
-                print(f"[DEBUG] Passing trip_ids to C++: {self._trip_ids_array}")
+                #print(f"[DEBUG] Passing trip_ids to C++: {self._trip_ids_array}")
                 # For now, we'll use a simple approach - pass trip_ids as a parameter
                 # This requires modifying the C++ interface
                 paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
             else:
-                print(f"[DEBUG] No trip_ids available, using default C++ method")
+                #print(f"[DEBUG] No trip_ids available, using default C++ method")
                 paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
         else:
             paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
@@ -981,7 +981,7 @@ class Network:
         """
         Set the trip_ids for the network edges.
         """
-        print(f"[DEBUG] set_trip_ids called with {len(trip_ids)} trip_ids. First 5: {list(trip_ids)[:5]}")
+        #print(f"[DEBUG] set_trip_ids called with {len(trip_ids)} trip_ids. First 5: {list(trip_ids)[:5]}")
         if len(trip_ids) != len(self.edges_df):
             raise ValueError(
                 f"trip_ids length ({len(trip_ids)}) must match number of edges ({len(self.edges_df)})"
@@ -989,24 +989,24 @@ class Network:
         self.trip_ids = pd.Series(trip_ids, index=self.edges_df.index)
         # Store trip_ids directly in Python for now
         self._trip_ids_array = np.array(trip_ids, dtype=int)
-        print(f"[DEBUG] Stored trip_ids in Python: {self._trip_ids_array}")
+        #print(f"[DEBUG] Stored trip_ids in Python: {self._trip_ids_array}")
 
         # Pass trip_ids to C++ using initialize_access_var mechanism
         try:
-            print(f"[DEBUG] Attempting to pass trip_ids via initialize_access_var...")
+            #print(f"[DEBUG] Attempting to pass trip_ids via initialize_access_var...")
             # Create node indices for each edge
             edge_from_nodes = self._node_indexes(self.edges_df['from']).values
             trip_ids_double = self._trip_ids_array.astype("double")
 
-            print(f"[DEBUG] Edge from nodes: {edge_from_nodes}")
-            print(f"[DEBUG] Trip IDs double: {trip_ids_double}")
+            #print(f"[DEBUG] Edge from nodes: {edge_from_nodes}")
+            #print(f"[DEBUG] Trip IDs double: {trip_ids_double}")
 
             self.net.initialize_access_var(
                 "trip_ids".encode("utf-8"),
                 edge_from_nodes,
                 trip_ids_double,
             )
-            print(f"[DEBUG] Successfully passed trip_ids to C++ via initialize_access_var")
+            #print(f"[DEBUG] Successfully passed trip_ids to C++ via initialize_access_var")
         except Exception as e2:
-            print(f"[DEBUG] initialize_access_var failed: {e2}")
+            #print(f"[DEBUG] initialize_access_var failed: {e2}")
             print(f"[DEBUG] Continuing with Python-only storage")
