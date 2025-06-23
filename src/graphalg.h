@@ -22,18 +22,18 @@ class Graphalg {
  public:
     Graphalg(
         int numnodes,
-        vector< vector<long> > edges, vector<double> edgeweights,
+        vector< vector<int> > edges, vector<double> edgeweights,
         bool twoway);
 
     Graphalg(
         int numnodes,
-        vector< vector<long> > edges, vector<double> edgeweights,
+        vector< vector<int> > edges, vector<double> edgeweights,
         vector<int> trip_ids,
         bool twoway);
 
     Graphalg(
         int numnodes,
-        vector< vector<long> > edges, vector<double> edgeweights,
+        vector< vector<int> > edges, vector<double> edgeweights,
         bool twoway,
         class Accessibility* accessibility_ptr);
 
@@ -64,12 +64,12 @@ class Graphalg {
     int numnodes;
     CH::ContractionHierarchies ch;
     std::vector<int> trip_ids;
-    std::vector<std::vector<long>> edges_storage;
+    std::vector<std::vector<int>> edges_storage;
     
     // Pointer to Accessibility for accessing accessibilityVars
     class Accessibility* accessibility_ptr;
 
-    std::vector<std::vector<int>> RoutesWithTripIds(std::vector<long> sources, std::vector<long> targets, int threadNum = 0);
+    std::vector<std::vector<int>> RoutesWithTripIds(std::vector<int> sources, std::vector<int> targets, int threadNum = 0);
 };
 }  // namespace accessibility
 }  // namespace MTC

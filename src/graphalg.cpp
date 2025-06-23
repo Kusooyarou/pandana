@@ -6,7 +6,7 @@
 namespace MTC {
 namespace accessibility {
 Graphalg::Graphalg(
-        int numnodes, vector< vector<long> > edges, vector<double> edgeweights,
+        int numnodes, vector< vector<int> > edges, vector<double> edgeweights,
         bool twoway) {
     this->numnodes = numnodes;
     this->edges_storage = edges;
@@ -48,7 +48,7 @@ Graphalg::Graphalg(
 }
 
 Graphalg::Graphalg(
-        int numnodes, vector< vector<long> > edges, vector<double> edgeweights,
+        int numnodes, vector< vector<int> > edges, vector<double> edgeweights,
         vector<int> trip_ids, bool twoway) : numnodes(numnodes), trip_ids(trip_ids) {
     this->edges_storage = edges;
 
@@ -91,7 +91,7 @@ Graphalg::Graphalg(
 
 Graphalg::Graphalg(
     int numnodes,
-    vector< vector<long> > edges, vector<double> edgeweights,
+    vector< vector<int> > edges, vector<double> edgeweights,
     bool twoway,
     class Accessibility* accessibility_ptr) : numnodes(numnodes), accessibility_ptr(accessibility_ptr) {
     
@@ -302,7 +302,7 @@ Graphalg::NearestPOI(const POIKeyType &category, int src, double maxdist, int nu
     return dm;
 }
 
-std::vector<std::vector<int>> Graphalg::RoutesWithTripIds(std::vector<long> sources, std::vector<long> targets, int threadNum) {
+std::vector<std::vector<int>> Graphalg::RoutesWithTripIds(std::vector<int> sources, std::vector<int> targets, int threadNum) {
     size_t n = std::min(sources.size(), targets.size());
     std::vector<std::vector<int>> result(n);
     for (size_t i = 0; i < n; ++i) {

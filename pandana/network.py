@@ -4,12 +4,16 @@ from contextlib import suppress
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import KDTree
+import sys
 
 from .cyaccess import cyaccess
 from .loaders import pandash5 as ph5
 import warnings
 import os
+import logging
 
+NODE_ID_DTYPE = np.int32
+logging.basicConfig(filename='debug.log', level=logging.INFO, filemode='a')
 
 class Suppresser:
     def __enter__(self):
@@ -199,7 +203,8 @@ class Network:
         ph5.network_to_pandas_hdf5(self, filename, rm_nodes)
 
     def _node_indexes(self, node_ids):
-        # for some reason, merge is must faster than .loc
+        node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
+        logging.info("PYTHON DEBUG _node_indexes node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         df = pd.merge(
             pd.DataFrame({"node_ids": node_ids}),
             pd.DataFrame({"node_idx": self.node_idx}),
@@ -256,16 +261,12 @@ class Network:
             Nodes that are traversed in the shortest path
 
         """
-        # map to internal node indexes
-        node_idx = self._node_indexes(pd.Series([node_a, node_b]))
-        node_a = node_idx.iloc[0]
-        node_b = node_idx.iloc[1]
-
+        node_idx = self._node_indexes(np.array([node_a, node_b], dtype=NODE_ID_DTYPE))
+        logging.info("PYTHON DEBUG shortest_path node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
+        node_a = int(node_idx.iloc[0])
+        node_b = int(node_idx.iloc[1])
         imp_num = self._imp_name_to_num(imp_name)
-
         path = self.net.shortest_path(node_a, node_b, imp_num)
-
-        # map back to external node IDs
         return self.node_ids.values[path]
 
     def shortest_paths(self, nodes_a, nodes_b, imp_name=None, trip_id=False):
@@ -295,6 +296,10 @@ class Network:
             If trip_id=False: Nodes traversed in each shortest path
             If trip_id=True: Trip IDs traversed in each shortest path
         """
+        nodes_a = np.asarray(nodes_a, dtype=NODE_ID_DTYPE)
+        nodes_b = np.asarray(nodes_b, dtype=NODE_ID_DTYPE)
+        logging.info("PYTHON DEBUG shortest_paths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
+        logging.info("PYTHON DEBUG shortest_paths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
                 "Origin and destination counts don't match: {}, {}".format(
@@ -307,23 +312,18 @@ class Network:
                 "trip_id=True requires trip_ids to be set using set_trip_ids() method"
             )
 
-        # map to internal node indexes
-        nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
-        nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
+        nodes_a_idx = self._node_indexes(nodes_a).values
+        nodes_b_idx = self._node_indexes(nodes_b).values
+        logging.info("PYTHON DEBUG shortest_paths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
+        logging.info("PYTHON DEBUG shortest_paths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
 
         imp_num = self._imp_name_to_num(imp_name)
 
         if trip_id:
-            # Pass trip_ids to C++ if available
             if hasattr(self, '_trip_ids_array'):
-                #print(f"[DEBUG] Passing trip_ids to C++: {self._trip_ids_array}")
-                # For now, we'll use a simple approach - pass trip_ids as a parameter
-                # This requires modifying the C++ interface
                 paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
             else:
-                #print(f"[DEBUG] No trip_ids available, using default C++ method")
                 paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
-            # Оставляем только уникальные trip_ids по ходу маршрута
             unique_paths = []
             for trip_list in paths:
                 seen = set()
@@ -333,12 +333,9 @@ class Network:
                         unique_trip_list.append(tid)
                         seen.add(tid)
                 unique_paths.append(unique_trip_list)
-            paths = unique_paths
-
-            
+            paths = [np.array(trip_list, dtype=NODE_ID_DTYPE) for trip_list in unique_paths]
         else:
             paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
-            # map back to external node ids
             paths = [self.node_ids.values[p] for p in paths]
 
         return paths
@@ -368,21 +365,17 @@ class Network:
         length : float
 
         """
-        # map to internal node indexes
-        node_idx = self._node_indexes(pd.Series([node_a, node_b]))
-        node_a = node_idx.iloc[0]
-        node_b = node_idx.iloc[1]
-
+        node_idx = self._node_indexes(np.array([node_a, node_b], dtype=NODE_ID_DTYPE))
+        logging.info("PYTHON DEBUG shortest_path_length node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
+        node_a = int(node_idx.iloc[0])
+        node_b = int(node_idx.iloc[1])
         imp_num = self._imp_name_to_num(imp_name)
-
         len = self.net.shortest_path_distance(node_a, node_b, imp_num)
-
         if len == 4294967.295:
             warnings.warn(
                 "Unsigned integer: shortest path distance is trying to be calculated between\
                 external %s and %s unconntected nodes" % (node_a, node_b)
             )
-
         return len
 
     def shortest_path_lengths(self, nodes_a, nodes_b, imp_name=None):
@@ -408,6 +401,10 @@ class Network:
         lengths : list of floats
 
         """
+        nodes_a = np.asarray(nodes_a, dtype=NODE_ID_DTYPE)
+        nodes_b = np.asarray(nodes_b, dtype=NODE_ID_DTYPE)
+        logging.info("PYTHON DEBUG shortest_path_lengths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
+        logging.info("PYTHON DEBUG shortest_path_lengths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
                 "Origin and destination counts don't match: {}, {}".format(
@@ -415,9 +412,10 @@ class Network:
                 )
             )
 
-        # map to internal node indexes
-        nodes_a_idx = self._node_indexes(pd.Series(nodes_a)).values
-        nodes_b_idx = self._node_indexes(pd.Series(nodes_b)).values
+        nodes_a_idx = self._node_indexes(nodes_a).values
+        nodes_b_idx = self._node_indexes(nodes_b).values
+        logging.info("PYTHON DEBUG shortest_path_lengths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
+        logging.info("PYTHON DEBUG shortest_path_lengths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
 
         imp_num = self._imp_name_to_num(imp_name)
 
@@ -468,6 +466,8 @@ class Network:
         Nothing
 
         """
+        node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
+        logging.info("PYTHON DEBUG set node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         if variable is None:
             variable = pd.Series(np.ones(len(node_ids)), index=node_ids.index)
         df = pd.DataFrame({name: variable, "node_idx": self._node_indexes(node_ids)})
@@ -540,8 +540,11 @@ class Network:
         ext_ids = self.node_idx.index.values
 
         # Ensure correct dtype for Cython interface
-        nodes = np.asarray(nodes, dtype=np.int64)
-        ext_ids = np.asarray(ext_ids, dtype=np.int64)
+        nodes = np.asarray(nodes, dtype=NODE_ID_DTYPE)
+        ext_ids = np.asarray(ext_ids, dtype=NODE_ID_DTYPE)
+
+        logging.info("PYTHON DEBUG nodes_in_range nodes dtype: %s", getattr(nodes, 'dtype', None))
+        logging.info("PYTHON DEBUG nodes_in_range ext_ids dtype: %s", getattr(ext_ids, 'dtype', None))
 
         raw_result = self.net.nodes_in_range(nodes, radius, imp_num, ext_ids)
         clean_result = pd.concat(
@@ -691,7 +694,8 @@ class Network:
         distances = np.transpose(distances)[0]
 
         node_ids = self.nodes_df.iloc[indexes].index
-
+        node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
+        logging.info("PYTHON DEBUG get_node_ids node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         df = pd.DataFrame({"node_id": node_ids, "distance": distances}, index=xys.index)
 
         if mapping_distance is not None:

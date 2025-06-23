@@ -22,7 +22,7 @@ bool distance_node_pair_comparator(const distance_node_pair& l,
 
 Accessibility::Accessibility(
         int numnodes,
-        vector< vector<long>> edges,
+        vector< vector<int>> edges,
         vector< vector<double>>  edgeweights,
         bool twoway) {
     this->numnodes = numnodes;
@@ -98,14 +98,14 @@ Accessibility::set_trip_ids(vector<int> trip_ids) {
 }
 
 
-vector<vector<pair<long, float>>>
-Accessibility::Range(vector<long> srcnodes, float radius, int graphno, 
-                     vector<long> ext_ids) {
+vector<vector<pair<int, float>>>
+Accessibility::Range(vector<int> srcnodes, float radius, int graphno, 
+                     vector<int> ext_ids) {
 
     // Set up a mapping between the external node ids and internal ones
-    std::unordered_map<long, int> int_ids(ext_ids.size());
+    std::unordered_map<int, int> int_ids(ext_ids.size());
     for (int i = 0; i < ext_ids.size(); i++) {
-        int_ids.insert(pair<long, int>(ext_ids[i], i));
+        int_ids.insert(pair<int, int>(ext_ids[i], i));
     }
     
     // use cached results if available
@@ -128,7 +128,7 @@ Accessibility::Range(vector<long> srcnodes, float radius, int graphno,
     // todo: check that performing an aggregation creates cache
 
     // Convert back to external node ids
-    vector<vector<pair<long, float>>> output(dists.size());
+    vector<vector<pair<int, float>>> output(dists.size());
     for (int i = 0; i < dists.size(); i++) {
         output[i].resize(dists[i].size());
         for (int j = 0; j < dists[i].size(); j++) {
@@ -148,7 +148,7 @@ Accessibility::Route(int src, int tgt, int graphno) {
 
 
 vector<vector<int>>
-Accessibility::Routes(vector<long> sources, vector<long> targets, int graphno) {
+Accessibility::Routes(vector<int> sources, vector<int> targets, int graphno) {
 
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<vector<int>> routes(n);
@@ -171,7 +171,7 @@ Accessibility::RouteWithTripIds(int src, int tgt, int graphno) {
 
 
 vector<vector<int>>
-Accessibility::RoutesWithTripIds(vector<long> sources, vector<long> targets, int graphno) {
+Accessibility::RoutesWithTripIds(vector<int> sources, vector<int> targets, int graphno) {
 
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<vector<int>> routes(n);
@@ -194,7 +194,7 @@ Accessibility::Distance(int src, int tgt, int graphno) {
 
 
 vector<double>
-Accessibility::Distances(vector<long> sources, vector<long> targets, int graphno) {                       
+Accessibility::Distances(vector<int> sources, vector<int> targets, int graphno) {                       
     
     int n = std::min(sources.size(), targets.size()); // in case lists don't match
     vector<double> distances(n);
@@ -219,7 +219,7 @@ POI QUERIES
 
 
 void Accessibility::initializeCategory(const double maxdist, const int maxitems,
-                                       string category, vector<long> node_idx)
+                                       string category, vector<int> node_idx)
 {
     accessibility_vars_t av;
     av.resize(this->numnodes);
@@ -231,7 +231,7 @@ void Accessibility::initializeCategory(const double maxdist, const int maxitems,
     for (int i = 0 ; i < ga.size() ; i++) {
         ga[i]->initPOIIndex(category, this->maxdist, this->maxitems);
         // initialize for each node
-        for (int j = 0 ; j < node_idx.size() ; j++) {
+        for (int j = 0 ; j < node_idx.size(); j++) {
             int node_id = node_idx[j];
 
             ga[i]->addPOIToIndex(category, node_id);
@@ -325,7 +325,7 @@ AGGREGATION/ACCESSIBILITY QUERIES
 
 void Accessibility::initializeAccVar(
     string category,
-    vector<long> node_idx,
+    vector<int> node_idx,
     vector<double> values) {
     accessibility_vars_t av;
     av.resize(this->numnodes);
