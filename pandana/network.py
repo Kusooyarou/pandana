@@ -323,6 +323,19 @@ class Network:
             else:
                 #print(f"[DEBUG] No trip_ids available, using default C++ method")
                 paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
+            # Оставляем только уникальные trip_ids по ходу маршрута
+            unique_paths = []
+            for trip_list in paths:
+                seen = set()
+                unique_trip_list = []
+                for tid in trip_list:
+                    if tid not in seen:
+                        unique_trip_list.append(tid)
+                        seen.add(tid)
+                unique_paths.append(unique_trip_list)
+            paths = unique_paths
+
+            
         else:
             paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
             # map back to external node ids
@@ -526,13 +539,17 @@ class Network:
         imp_name = self.impedance_names[imp_num]
         ext_ids = self.node_idx.index.values
 
+        # Ensure correct dtype for Cython interface
+        nodes = np.asarray(nodes, dtype=np.int64)
+        ext_ids = np.asarray(ext_ids, dtype=np.int64)
+
         raw_result = self.net.nodes_in_range(nodes, radius, imp_num, ext_ids)
         clean_result = pd.concat(
             [
                 pd.DataFrame(r, columns=["destination", imp_name]).assign(source=ix)
                 for r, ix in zip(raw_result, nodes)
             ]
-        )[["source", "destination", imp_name]]
+        )["source", "destination", imp_name]
         return (
             clean_result.drop_duplicates(subset=["source", "destination"])
             .reset_index(drop=True)
