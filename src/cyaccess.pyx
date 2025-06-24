@@ -82,9 +82,9 @@ cdef class cyaccess:
         twoway: whether the edges should all be two-way or whether they
             are directed from the first to the second node
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG __cinit__ node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
-            f.write(f'CYTHON DEBUG __cinit__ edges dtype: {getattr(edges, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG __cinit__ node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
+        #     f.write(f'CYTHON DEBUG __cinit__ edges dtype: {getattr(edges, "dtype", None)}\n')
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
         edges = np.asarray(edges, dtype=NODE_ID_DTYPE)
         self.access = new Accessibility(len(node_ids), edges, edge_weights, twoway)
@@ -107,8 +107,8 @@ cdef class cyaccess:
         category - the category name
         node_ids - an array of nodeids which are locations where this poi occurs
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG initialize_category node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG initialize_category node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
         self.access.initializeCategory(maxdist, maxitems, category, node_ids)
 
@@ -143,8 +143,8 @@ cdef class cyaccess:
         node_ids: vector of node identifiers
         values: vector of values that are location at the nodes
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG initialize_access_var node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG initialize_access_var node_ids dtype: {getattr(node_ids, "dtype", None)}\n')
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
         values = np.asarray(values, dtype=np.float64)
         self.access.initializeAccVar(category, node_ids, values)
@@ -181,8 +181,8 @@ cdef class cyaccess:
         destnode - node id destination
         impno - the impedance id to use
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG shortest_path srcnode type: {type(srcnode)}, destnode type: {type(destnode)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG shortest_path srcnode type: {type(srcnode)}, destnode type: {type(destnode)}\n')
         srcnode = NODE_ID_DTYPE(srcnode)
         destnode = NODE_ID_DTYPE(destnode)
         return self.access.Route(srcnode, destnode, impno)
@@ -193,9 +193,9 @@ cdef class cyaccess:
         destnodes - node ids of destinations
         impno - impedance id
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG shortest_paths srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
-            f.write(f'CYTHON DEBUG shortest_paths destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG shortest_paths srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
+        #     f.write(f'CYTHON DEBUG shortest_paths destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
         srcnodes = np.asarray(srcnodes, dtype=NODE_ID_DTYPE)
         destnodes = np.asarray(destnodes, dtype=NODE_ID_DTYPE)
         return self.access.Routes(srcnodes, destnodes, impno)
@@ -207,9 +207,9 @@ cdef class cyaccess:
         impno - impedance id
         Returns trip_ids instead of node paths
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG shortest_paths_with_trip_ids srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
-            f.write(f'CYTHON DEBUG shortest_paths_with_trip_ids destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG shortest_paths_with_trip_ids srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
+        #     f.write(f'CYTHON DEBUG shortest_paths_with_trip_ids destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
         srcnodes = np.asarray(srcnodes, dtype=NODE_ID_DTYPE)
         destnodes = np.asarray(destnodes, dtype=NODE_ID_DTYPE)
         return self.access.RoutesWithTripIds(srcnodes, destnodes, impno)
@@ -220,8 +220,8 @@ cdef class cyaccess:
         destnode - node id destination
         impno - the impedance id to use
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG shortest_path_distance srcnode type: {type(srcnode)}, destnode type: {type(destnode)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG shortest_path_distance srcnode type: {type(srcnode)}, destnode type: {type(destnode)}\n')
         srcnode = NODE_ID_DTYPE(srcnode)
         destnode = NODE_ID_DTYPE(destnode)
         return self.access.Distance(srcnode, destnode, impno)
@@ -232,9 +232,9 @@ cdef class cyaccess:
         destnodes - node ids of destinations
         impno - impedance id
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG shortest_path_distances srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
-            f.write(f'CYTHON DEBUG shortest_path_distances destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG shortest_path_distances srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
+        #     f.write(f'CYTHON DEBUG shortest_path_distances destnodes dtype: {getattr(destnodes, "dtype", None)}\n')
         srcnodes = np.asarray(srcnodes, dtype=NODE_ID_DTYPE)
         destnodes = np.asarray(destnodes, dtype=NODE_ID_DTYPE)
         return self.access.Distances(srcnodes, destnodes, impno)
@@ -249,9 +249,9 @@ cdef class cyaccess:
         impno - the impedance id to use
         ext_ids - all node ids in the network
         """
-        with open('debug.log', 'a') as f:
-            f.write(f'CYTHON DEBUG nodes_in_range srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
-            f.write(f'CYTHON DEBUG nodes_in_range ext_ids dtype: {getattr(ext_ids, "dtype", None)}\n')
+        # with open('debug.log', 'a') as f:
+        #     f.write(f'CYTHON DEBUG nodes_in_range srcnodes dtype: {getattr(srcnodes, "dtype", None)}\n')
+        #     f.write(f'CYTHON DEBUG nodes_in_range ext_ids dtype: {getattr(ext_ids, "dtype", None)}\n')
         srcnodes = np.asarray(srcnodes, dtype=NODE_ID_DTYPE)
         ext_ids = np.asarray(ext_ids, dtype=NODE_ID_DTYPE)
         return self.access.Range(srcnodes, radius, impno, ext_ids)

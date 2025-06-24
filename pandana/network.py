@@ -10,10 +10,10 @@ from .cyaccess import cyaccess
 from .loaders import pandash5 as ph5
 import warnings
 import os
-import logging
+#import logging
 
 NODE_ID_DTYPE = np.int32
-logging.basicConfig(filename='debug.log', level=logging.INFO, filemode='a')
+#logging.basicConfig(filename='debug.log', level=logging.INFO, filemode='a')
 
 class Suppresser:
     def __enter__(self):
@@ -204,7 +204,7 @@ class Network:
 
     def _node_indexes(self, node_ids):
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
-        logging.info("PYTHON DEBUG _node_indexes node_ids dtype: %s", getattr(node_ids, 'dtype', None))
+        #logging.info("PYTHON DEBUG _node_indexes node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         df = pd.merge(
             pd.DataFrame({"node_ids": node_ids}),
             pd.DataFrame({"node_idx": self.node_idx}),
@@ -262,7 +262,7 @@ class Network:
 
         """
         node_idx = self._node_indexes(np.array([node_a, node_b], dtype=NODE_ID_DTYPE))
-        logging.info("PYTHON DEBUG shortest_path node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
         node_a = int(node_idx.iloc[0])
         node_b = int(node_idx.iloc[1])
         imp_num = self._imp_name_to_num(imp_name)
@@ -298,8 +298,8 @@ class Network:
         """
         nodes_a = np.asarray(nodes_a, dtype=NODE_ID_DTYPE)
         nodes_b = np.asarray(nodes_b, dtype=NODE_ID_DTYPE)
-        logging.info("PYTHON DEBUG shortest_paths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
-        logging.info("PYTHON DEBUG shortest_paths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_paths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_paths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
                 "Origin and destination counts don't match: {}, {}".format(
@@ -314,26 +314,25 @@ class Network:
 
         nodes_a_idx = self._node_indexes(nodes_a).values
         nodes_b_idx = self._node_indexes(nodes_b).values
-        logging.info("PYTHON DEBUG shortest_paths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
-        logging.info("PYTHON DEBUG shortest_paths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_paths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_paths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
 
         imp_num = self._imp_name_to_num(imp_name)
 
         if trip_id:
-            if hasattr(self, '_trip_ids_array'):
-                paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
-            else:
-                paths = self.net.shortest_paths_with_trip_ids(nodes_a_idx, nodes_b_idx, imp_num)
-            unique_paths = []
-            for trip_list in paths:
-                seen = set()
-                unique_trip_list = []
-                for tid in trip_list:
-                    if tid not in seen:
-                        unique_trip_list.append(tid)
-                        seen.add(tid)
-                unique_paths.append(unique_trip_list)
-            paths = [np.array(trip_list, dtype=NODE_ID_DTYPE) for trip_list in unique_paths]
+            # Получаем последовательность узлов кратчайшего пути
+            node_paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
+            trip_id_paths = []
+            for path in node_paths:
+                trip_ids = []
+                for u, v in zip(path[:-1], path[1:]):
+                    # Найти trip_id для ребра (u, v)
+                    edge_idx = np.where((self.edge_indexes[:, 0] == u) & (self.edge_indexes[:, 1] == v))[0]
+                    if len(edge_idx) > 0:
+                        trip_ids.append(self._trip_ids_array[edge_idx[0]])
+                trip_id_paths.append(np.array(trip_ids, dtype=NODE_ID_DTYPE))
+
+            paths = trip_id_paths
         else:
             paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
             paths = [self.node_ids.values[p] for p in paths]
@@ -366,7 +365,7 @@ class Network:
 
         """
         node_idx = self._node_indexes(np.array([node_a, node_b], dtype=NODE_ID_DTYPE))
-        logging.info("PYTHON DEBUG shortest_path_length node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path_length node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
         node_a = int(node_idx.iloc[0])
         node_b = int(node_idx.iloc[1])
         imp_num = self._imp_name_to_num(imp_name)
@@ -403,8 +402,8 @@ class Network:
         """
         nodes_a = np.asarray(nodes_a, dtype=NODE_ID_DTYPE)
         nodes_b = np.asarray(nodes_b, dtype=NODE_ID_DTYPE)
-        logging.info("PYTHON DEBUG shortest_path_lengths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
-        logging.info("PYTHON DEBUG shortest_path_lengths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path_lengths nodes_a dtype: %s", getattr(nodes_a, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path_lengths nodes_b dtype: %s", getattr(nodes_b, 'dtype', None))
         if len(nodes_a) != len(nodes_b):
             raise ValueError(
                 "Origin and destination counts don't match: {}, {}".format(
@@ -414,8 +413,8 @@ class Network:
 
         nodes_a_idx = self._node_indexes(nodes_a).values
         nodes_b_idx = self._node_indexes(nodes_b).values
-        logging.info("PYTHON DEBUG shortest_path_lengths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
-        logging.info("PYTHON DEBUG shortest_path_lengths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path_lengths nodes_a_idx dtype: %s", getattr(nodes_a_idx, 'dtype', None))
+        #logging.info("PYTHON DEBUG shortest_path_lengths nodes_b_idx dtype: %s", getattr(nodes_b_idx, 'dtype', None))
 
         imp_num = self._imp_name_to_num(imp_name)
 
@@ -467,7 +466,7 @@ class Network:
 
         """
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
-        logging.info("PYTHON DEBUG set node_ids dtype: %s", getattr(node_ids, 'dtype', None))
+        #logging.info("PYTHON DEBUG set node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         if variable is None:
             variable = pd.Series(np.ones(len(node_ids)), index=node_ids.index)
         df = pd.DataFrame({name: variable, "node_idx": self._node_indexes(node_ids)})
@@ -543,8 +542,8 @@ class Network:
         nodes = np.asarray(nodes, dtype=NODE_ID_DTYPE)
         ext_ids = np.asarray(ext_ids, dtype=NODE_ID_DTYPE)
 
-        logging.info("PYTHON DEBUG nodes_in_range nodes dtype: %s", getattr(nodes, 'dtype', None))
-        logging.info("PYTHON DEBUG nodes_in_range ext_ids dtype: %s", getattr(ext_ids, 'dtype', None))
+        #logging.info("PYTHON DEBUG nodes_in_range nodes dtype: %s", getattr(nodes, 'dtype', None))
+        #logging.info("PYTHON DEBUG nodes_in_range ext_ids dtype: %s", getattr(ext_ids, 'dtype', None))
 
         raw_result = self.net.nodes_in_range(nodes, radius, imp_num, ext_ids)
         clean_result = pd.concat(
@@ -695,7 +694,7 @@ class Network:
 
         node_ids = self.nodes_df.iloc[indexes].index
         node_ids = np.asarray(node_ids, dtype=NODE_ID_DTYPE)
-        logging.info("PYTHON DEBUG get_node_ids node_ids dtype: %s", getattr(node_ids, 'dtype', None))
+        #logging.info("PYTHON DEBUG get_node_ids node_ids dtype: %s", getattr(node_ids, 'dtype', None))
         df = pd.DataFrame({"node_id": node_ids, "distance": distances}, index=xys.index)
 
         if mapping_distance is not None:
