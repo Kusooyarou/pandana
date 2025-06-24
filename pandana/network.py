@@ -332,7 +332,8 @@ class Network:
                         trip_ids.append(self._trip_ids_array[edge_idx[0]])
                 trip_id_paths.append(np.array(trip_ids, dtype=NODE_ID_DTYPE))
 
-            paths = trip_id_paths
+            paths = [arr[np.r_[True, arr[1:] != arr[:-1]]] for arr in trip_id_paths]
+
         else:
             paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
             paths = [self.node_ids.values[p] for p in paths]
