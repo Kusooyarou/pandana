@@ -324,19 +324,32 @@ class Network:
             node_paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
             trip_id_paths = []
             for path in node_paths:
+                if path is None or len(path) < 2:
+                    trip_id_paths.append(np.array([], dtype=NODE_ID_DTYPE))
+                    continue
                 trip_ids = []
                 for u, v in zip(path[:-1], path[1:]):
                     # Найти trip_id для ребра (u, v)
                     edge_idx = np.where((self.edge_indexes[:, 0] == u) & (self.edge_indexes[:, 1] == v))[0]
                     if len(edge_idx) > 0:
                         trip_ids.append(self._trip_ids_array[edge_idx[0]])
-                trip_id_paths.append(np.array(trip_ids, dtype=NODE_ID_DTYPE))
-
-            paths = [arr[np.r_[True, arr[1:] != arr[:-1]]] for arr in trip_id_paths]
-
+                # Удаляем подряд идущие дубликаты вручную
+                trip_ids_nodup = []
+                prev = None
+                for tid in trip_ids:
+                    if tid != prev:
+                        trip_ids_nodup.append(tid)
+                        prev = tid
+                trip_id_paths.append(np.array(trip_ids_nodup, dtype=NODE_ID_DTYPE))
+            paths = trip_id_paths
         else:
-            paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
-            paths = [self.node_ids.values[p] for p in paths]
+            node_paths = self.net.shortest_paths(nodes_a_idx, nodes_b_idx, imp_num)
+            paths = []
+            for path in node_paths:
+                if path is None or len(path) < 2:
+                    paths.append(np.array([], dtype=NODE_ID_DTYPE))
+                else:
+                    paths.append(self.node_ids.values[path])
 
         return paths
 
