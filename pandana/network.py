@@ -156,7 +156,7 @@ class Network:
 
              # this maps IDs to indexes which are used internally
             self.node_idx = pd.Series(
-                np.arange(len(nodes_df), dtype="int"), index=nodes_df.index
+                np.arange(len(nodes_df), dtype=np.int32), index=nodes_df.index
             )
 
             # Сохраняем внутренние индексы рёбер
