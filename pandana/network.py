@@ -136,8 +136,20 @@ class Network:
             context_manager = None
 
         with context_manager or suppress(): 
+            # Приводим индексы к int32
+            if isinstance(node_x, pd.Series):
+                node_x.index = node_x.index.astype(np.int32)
+            if isinstance(node_y, pd.Series):
+                node_y.index = node_y.index.astype(np.int32)
+                
             nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
-            edges_df = pd.DataFrame({"from": edge_from.astype(np.int32), "to": edge_to.astype(np.int32)}).join(edge_weights)
+            nodes_df.index = nodes_df.index.astype(np.int32)  # Приводим индекс к int32
+            
+            edges_df = pd.DataFrame({
+                "from": edge_from.astype(np.int32), 
+                "to": edge_to.astype(np.int32)
+            }).join(edge_weights)
+            edges_df.index = edges_df.index.astype(np.int32)  # Приводим индекс к int32
 
             with open("pandana_dtype_debug.log", "a", encoding="utf-8") as f:
                 f.write(f"DEBUG node_x dtype: {getattr(node_x, 'dtype', type(node_x))}\n")
@@ -146,6 +158,8 @@ class Network:
                 f.write(f"DEBUG edge_to dtype: {getattr(edge_to, 'dtype', type(edge_to))}\n")
                 f.write(f"DEBUG edges_df['from'] dtype: {edges_df['from'].dtype}\n")
                 f.write(f"DEBUG edges_df['to'] dtype: {edges_df['to'].dtype}\n")
+                f.write(f"DEBUG nodes_df index dtype: {nodes_df.index.dtype}\n")  # Добавляем проверку типа индекса
+                f.write(f"DEBUG edges_df index dtype: {edges_df.index.dtype}\n")  # Добавляем проверку типа индекса
 
             self.nodes_df = nodes_df
             self.edges_df = edges_df
@@ -154,9 +168,11 @@ class Network:
             self.poi_category_names = []
             self.poi_category_indexes = {}
 
-             # this maps IDs to indexes which are used internally
+            # this maps IDs to indexes which are used internally
             self.node_idx = pd.Series(
-                np.arange(len(nodes_df), dtype=np.int32), index=nodes_df.index
+                np.arange(len(nodes_df), dtype=np.int32), 
+                index=nodes_df.index,
+                dtype=np.int32  # Явно указываем тип для Series
             )
 
             # Сохраняем внутренние индексы рёбер
@@ -241,7 +257,7 @@ class Network:
         """
         The node IDs which will be used as the index of many return series
         """
-        return self.node_idx.index
+        return self.node_idx.index.astype(np.int32)  # Приводим к int32
 
     @property
     def bbox(self):
@@ -257,31 +273,14 @@ class Network:
 
     def shortest_path(self, node_a, node_b, imp_name=None):
         """
-        Return the shortest path between two node IDs in the network. Must
-        provide an impedance name if more than one is available.
-
-        Parameters
-        ----------
-        node_a : int
-            Source node ID
-        node_b : int
-            Destination node ID
-        imp_name : string, optional
-            The impedance name to use for the shortest path
-
-        Returns
-        -------
-        path : np.ndarray
-            Nodes that are traversed in the shortest path
-
+        Return the shortest path between two node IDs in the network.
         """
         node_idx = self._node_indexes(np.array([node_a, node_b], dtype=NODE_ID_DTYPE))
-        #logging.info("PYTHON DEBUG shortest_path node_idx dtype: %s", getattr(node_idx.values, 'dtype', None))
         node_a = int(node_idx.iloc[0])
         node_b = int(node_idx.iloc[1])
         imp_num = self._imp_name_to_num(imp_name)
         path = self.net.shortest_path(node_a, node_b, imp_num)
-        return self.node_ids.values[path]
+        return self.node_ids.values[path].astype(np.int32)  # Приводим к int32
 
     def shortest_paths(self, nodes_a, nodes_b, imp_name=None, trip_id=False):
         """
