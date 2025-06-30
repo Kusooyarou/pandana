@@ -137,7 +137,7 @@ class Network:
 
         with context_manager or suppress(): 
             nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
-            edges_df = pd.DataFrame({"from": edge_from, "to": edge_to}).join(edge_weights)
+            edges_df = pd.DataFrame({"from": edge_from.astype(np.int32), "to": edge_to.astype(np.int32)}).join(edge_weights)
 
             self.nodes_df = nodes_df
             self.edges_df = edges_df
@@ -155,10 +155,10 @@ class Network:
             self.edge_indexes = pd.concat(
                 [self._node_indexes(edges_df["from"]), self._node_indexes(edges_df["to"])],
                 axis=1,
-            ).values
+            ).values.astype(np.int32)
 
             self.net = cyaccess(
-                self.node_idx.values,
+                self.node_idx.values.astype(np.int32),
                 nodes_df.astype("double").values,
                 self.edge_indexes,
                 edges_df[edge_weights.columns].transpose().astype("double").values,
