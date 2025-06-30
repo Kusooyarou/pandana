@@ -139,6 +139,14 @@ class Network:
             nodes_df = pd.DataFrame({"x": node_x, "y": node_y})
             edges_df = pd.DataFrame({"from": edge_from.astype(np.int32), "to": edge_to.astype(np.int32)}).join(edge_weights)
 
+            with open("pandana_dtype_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"DEBUG node_x dtype: {getattr(node_x, 'dtype', type(node_x))}\n")
+                f.write(f"DEBUG node_y dtype: {getattr(node_y, 'dtype', type(node_y))}\n")
+                f.write(f"DEBUG edge_from dtype: {getattr(edge_from, 'dtype', type(edge_from))}\n")
+                f.write(f"DEBUG edge_to dtype: {getattr(edge_to, 'dtype', type(edge_to))}\n")
+                f.write(f"DEBUG edges_df['from'] dtype: {edges_df['from'].dtype}\n")
+                f.write(f"DEBUG edges_df['to'] dtype: {edges_df['to'].dtype}\n")
+
             self.nodes_df = nodes_df
             self.edges_df = edges_df
             self.impedance_names = list(edge_weights.columns)
@@ -156,6 +164,12 @@ class Network:
                 [self._node_indexes(edges_df["from"]), self._node_indexes(edges_df["to"])],
                 axis=1,
             ).values.astype(np.int32)
+
+            with open("pandana_dtype_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"DEBUG self.node_idx.values dtype: {self.node_idx.values.dtype}\n")
+                f.write(f"DEBUG self.edge_indexes dtype: {self.edge_indexes.dtype}\n")
+                f.write(f"DEBUG nodes_df.astype('double').values dtype: {nodes_df.astype('double').values.dtype}\n")
+                f.write(f"DEBUG edge_weights columns dtypes: {[edges_df[c].dtype for c in edge_weights.columns]}\n")
 
             self.net = cyaccess(
                 self.node_idx.values.astype(np.int32),
