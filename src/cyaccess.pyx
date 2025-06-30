@@ -8,7 +8,7 @@ from libcpp.pair cimport pair
 
 import numpy as np
 import sys
-NODE_ID_DTYPE = np.int32 if sys.platform.startswith('win') else np.int64
+NODE_ID_DTYPE = np.int32  # Fixed dtype for cross-platform compatibility
 cimport numpy as np
 
 # resources
