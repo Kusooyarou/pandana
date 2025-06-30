@@ -226,7 +226,7 @@ class Network:
             right_index=True,
             how="left",
         )
-        return df.node_idx
+        return df.node_idx.astype(np.int32)
 
     @property
     def aggregations(self):
